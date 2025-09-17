@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nährwert-Tagebuch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .progress-bar-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            transition: height 0.3s ease-in-out;
+        }
+        .progress-text {
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 min-h-screen flex items-center justify-center">
+    <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8 w-full max-w-2xl">
+        <h1 class="text-3xl font-bold text-center text-green-600 mb-6">Nährwert-Tagebuch</h1>
+        
+        <!-- Input Section (Image Upload) -->
+        <div class="mb-6">
+            <label for="foodImageUpload" class="block w-full text-center p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                <span id="foodUploadLabel" class="text-gray-500">Bild von deiner Mahlzeit hochladen</span>
+                <input type="file" id="foodImageUpload" class="hidden" accept="image/*">
+            </label>
+            <div id="foodLoading" class="text-center text-green-500 hidden mt-4">
+                Foto wird analysiert...
+            </div>
+            <div id="foodResults" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 hidden">
+                <!-- Analysis results will be inserted here -->
+            </div>
+            <div id="foodError" class="text-center text-red-500 hidden mt-4">
+                <!-- Error messages -->
+            </div>
+        </div>
+
+        <!-- Meal Summary Section -->
+        <div class="mb-6 bg-green-50 rounded-xl p-4">
+            <h2 class="text-xl font-semibold mb-3 text-green-700">Heutige Mahlzeit</h2>
+            <div id="mealSummary" class="text-gray-700">
+                <!-- Meal summary will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Water Intake Section -->
+        <div class="bg-blue-50 rounded-xl p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-blue-700">Wasserzufuhr</h2>
+            <div class="flex items-center space-x-2">
+                <input type="number" id="waterInput" placeholder="Menge in ml" class="w-2/3 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                <button id="addWaterButton" class="w-1/3 bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors duration-200">Hinzufügen</button>
+            </div>
+            <div class="mt-4 progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                <div id="waterBar" class="progress-bar bg-blue-400 opacity-50"></div>
+                <span class="text-2xl font-bold text-gray-900 progress-text" id="waterTotal">0 ml</span>
+                <span class="text-sm text-gray-500 progress-text">Wasser / 2000 ml</span>
+            </div>
+        </div>
+
+        <!-- Fitness Tracker Section -->
+        <div class="mb-6 bg-purple-50 rounded-xl p-4">
+            <h2 class="text-xl font-semibold mb-3 text-purple-700">Aktivität von deiner Fitnessuhr</h2>
+            <label for="watchImageUpload" class="block w-full text-center p-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors duration-200">
+                <span id="watchUploadLabel" class="text-gray-500">Bild der Fitnessuhr hochladen</span>
+                <input type="file" id="watchImageUpload" class="hidden" accept="image/*">
+            </label>
+            <div id="watchLoading" class="text-center text-purple-500 hidden mt-4">
+                Bild wird analysiert...
+            </div>
+            <div id="watchResults" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 hidden">
+                <!-- Analysis results will be inserted here -->
+            </div>
+            <div id="watchError" class="text-center text-red-500 hidden mt-4">
+                <!-- Error messages -->
+            </div>
+        </div>
+
+        <!-- Daily Totals with Goals -->
+        <div class="bg-lime-50 rounded-xl p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-lime-700">Tagesübersicht & Ziele (14 Jahre)</h2>
+            <div id="dailyTotals" class="grid grid-cols-2 gap-4 text-gray-800 font-medium">
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="caloriesBar" class="progress-bar bg-red-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalCalories">0</span>
+                    <span class="text-sm text-gray-500 progress-text">Kalorien / 2000 kcal</span>
+                </div>
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="proteinBar" class="progress-bar bg-green-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalProtein">0g</span>
+                    <span class="text-sm text-gray-500 progress-text">Protein / 70 g</span>
+                </div>
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="carbsBar" class="progress-bar bg-lime-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalCarbs">0g</span>
+                    <span class="text-sm text-gray-500 progress-text">Kohlenhydrate / 275 g</span>
+                </div>
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="fatBar" class="progress-bar bg-teal-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalFat">0g</span>
+                    <span class="text-sm text-gray-500 progress-text">Fett / 75 g</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Micro-nutrients Section -->
+        <div class="bg-yellow-50 rounded-xl p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-3 text-yellow-700">Vitamine & Mineralien</h2>
+            <div id="micronutrients" class="grid grid-cols-2 gap-4 text-gray-800 font-medium">
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="ironBar" class="progress-bar bg-red-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalIron">0 mg</span>
+                    <span class="text-sm text-gray-500 progress-text">Eisen / 15 mg</span>
+                </div>
+                <div class="progress-bar-container flex flex-col items-center p-3 bg-white rounded-lg shadow-sm">
+                    <div id="vitaminsBar" class="progress-bar bg-yellow-400 opacity-50"></div>
+                    <span class="text-2xl font-bold text-gray-900 progress-text" id="totalVitamins">0%</span>
+                    <span class="text-sm text-gray-500 progress-text">Vitamine (Geschätzt)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation Section -->
+        <div id="recommendationSection" class="bg-gray-200 rounded-xl p-4 mb-6 hidden">
+            <h2 class="text-xl font-semibold mb-3 text-gray-800">Empfehlung</h2>
+            <div id="recommendationText" class="text-gray-700"></div>
+        </div>
+
+        <!-- Final Buttons -->
+        <button id="endDayButton" class="w-full mt-4 bg-emerald-600 text-white p-3 rounded-lg hover:bg-emerald-700 transition-colors duration-200 shadow-md">Tag abschließen & zurücksetzen</button>
+
+        <!-- History Section -->
+        <div class="bg-green-100 rounded-xl p-4 mt-6">
+            <h2 class="text-xl font-semibold mb-3 text-gray-800">Verlauf</h2>
+            <div id="historyList" class="space-y-4">
+                <!-- History items will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API configuration. The API key is handled by the platform.
+        const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent';
+        const API_KEY = ""; // Do not change. The platform provides the key.
+
+        // Initialize state
+        let currentMeal = JSON.parse(localStorage.getItem('currentMeal')) || [];
+        let dailyTotals = JSON.parse(localStorage.getItem('dailyTotals')) || { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, caloriesBurned: 0, steps: 0, iron: 0, vitamins: 0 };
+        let nutritionHistory = JSON.parse(localStorage.getItem('nutritionHistory')) || [];
+        
+        // Daily goals for a 14-year-old
+        const goals = {
+            calories: 2000,
+            protein: 70,
+            carbs: 275,
+            fat: 75,
+            water: 2000, // 2 liters
+            iron: 15,
+            vitamins: 100
+        };
+
+        // DOM elements
+        const foodImageUploadInput = document.getElementById('foodImageUpload');
+        const foodUploadLabel = document.getElementById('foodUploadLabel');
+        const foodLoadingDiv = document.getElementById('foodLoading');
+        const foodResultsDiv = document.getElementById('foodResults');
+        const foodErrorDiv = document.getElementById('foodError');
+        
+        const watchImageUploadInput = document.getElementById('watchImageUpload');
+        const watchUploadLabel = document.getElementById('watchUploadLabel');
+        const watchLoadingDiv = document.getElementById('watchLoading');
+        const watchResultsDiv = document.getElementById('watchResults');
+        const watchErrorDiv = document.getElementById('watchError');
+        
+        const mealSummaryDiv = document.getElementById('mealSummary');
+        const totalCaloriesSpan = document.getElementById('totalCalories');
+        const totalProteinSpan = document.getElementById('totalProtein');
+        const totalCarbsSpan = document.getElementById('totalCarbs');
+        const totalFatSpan = document.getElementById('totalFat');
+        const endDayButton = document.getElementById('endDayButton');
+        const historyList = document.getElementById('historyList');
+        const waterInput = document.getElementById('waterInput');
+        const addWaterButton = document.getElementById('addWaterButton');
+        const waterTotalSpan = document.getElementById('waterTotal');
+        const waterBar = document.getElementById('waterBar');
+        const recommendationSection = document.getElementById('recommendationSection');
+        const recommendationText = document.getElementById('recommendationText');
+        const totalIronSpan = document.getElementById('totalIron');
+        const totalVitaminsSpan = document.getElementById('totalVitamins');
+
+        // Render functions
+        function renderMealSummary() {
+            if (currentMeal.length === 0) {
+                mealSummaryDiv.innerHTML = '<p class="text-center text-gray-500">Noch keine Lebensmittel hinzugefügt.</p>';
+            } else {
+                mealSummaryDiv.innerHTML = `
+                    <ul class="list-disc pl-5 space-y-2">
+                        ${currentMeal.map((item, index) => `
+                            <li class="flex justify-between items-center">
+                                <span class="flex-1">${item.name} <span class="text-sm text-gray-500">(${item.calories.toFixed(1)} kcal)</span></span>
+                                <button onclick="removeItem(${index})" class="ml-2 text-red-500 hover:text-red-700 transition-colors duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 11-2 0v6a1 1 0 112 0V8z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            }
+        }
+
+        function renderDailyTotals() {
+            totalCaloriesSpan.textContent = dailyTotals.calories.toFixed(1);
+            totalProteinSpan.textContent = `${dailyTotals.protein.toFixed(1)}g`;
+            totalCarbsSpan.textContent = `${dailyTotals.carbs.toFixed(1)}g`;
+            totalFatSpan.textContent = `${dailyTotals.fat.toFixed(1)}g`;
+            waterTotalSpan.textContent = `${dailyTotals.water} ml`;
+            totalIronSpan.textContent = `${dailyTotals.iron.toFixed(1)} mg`;
+            totalVitaminsSpan.textContent = `${Math.min(100, dailyTotals.vitamins).toFixed(0)}%`;
+
+
+            // Update progress bars
+            const caloriesBar = document.getElementById('caloriesBar');
+            const proteinBar = document.getElementById('proteinBar');
+            const carbsBar = document.getElementById('carbsBar');
+            const fatBar = document.getElementById('fatBar');
+            const waterBar = document.getElementById('waterBar');
+            const ironBar = document.getElementById('ironBar');
+            const vitaminsBar = document.getElementById('vitaminsBar');
+
+
+            caloriesBar.style.height = `${Math.min(100, (dailyTotals.calories / goals.calories) * 100)}%`;
+            proteinBar.style.height = `${Math.min(100, (dailyTotals.protein / goals.protein) * 100)}%`;
+            carbsBar.style.height = `${Math.min(100, (dailyTotals.carbs / goals.carbs) * 100)}%`;
+            fatBar.style.height = `${Math.min(100, (dailyTotals.fat / goals.fat) * 100)}%`;
+            waterBar.style.height = `${Math.min(100, (dailyTotals.water / goals.water) * 100)}%`;
+            ironBar.style.height = `${Math.min(100, (dailyTotals.iron / goals.iron) * 100)}%`;
+            vitaminsBar.style.height = `${Math.min(100, dailyTotals.vitamins)}%`;
+        }
+        
+        function renderHistory() {
+            if (nutritionHistory.length === 0) {
+                historyList.innerHTML = '<p class="text-center text-gray-500">Noch keine historischen Daten.</p>';
+                return;
+            }
+
+            historyList.innerHTML = nutritionHistory.map(day => `
+                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-300">
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">${day.date}</h3>
+                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                        <span>Kalorien: <span class="font-semibold">${day.totals.calories.toFixed(1)} kcal</span></span>
+                        <span>Protein: <span class="font-semibold">${day.totals.protein.toFixed(1)} g</span></span>
+                        <span>Kohlenhydrate: <span class="font-semibold">${day.totals.carbs.toFixed(1)} g</span></span>
+                        <span>Fett: <span class="font-semibold">${day.totals.fat.toFixed(1)} g</span></span>
+                        <span>Wasser: <span class="font-semibold">${day.totals.water} ml</span></span>
+                        <span>Verbrannte Kalorien: <span class="font-semibold">${day.totals.caloriesBurned} kcal</span></span>
+                        <span>Schritte: <span class="font-semibold">${day.totals.steps}</span></span>
+                        <span>Eisen: <span class="font-semibold">${day.totals.iron} mg</span></span>
+                        <span>Vitamine: <span class="font-semibold">${Math.min(100, day.totals.vitamins).toFixed(0)}%</span></span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Functions to manage state
+        function updateTotals(item) {
+            dailyTotals.calories += item.calories;
+            dailyTotals.protein += item.protein;
+            dailyTotals.carbs += item.carbs;
+            dailyTotals.fat += item.fat;
+            dailyTotals.iron += item.iron;
+            dailyTotals.vitamins += item.vitamins;
+            saveState();
+            renderDailyTotals();
+        }
+
+        function saveState() {
+            localStorage.setItem('currentMeal', JSON.stringify(currentMeal));
+            localStorage.setItem('dailyTotals', JSON.stringify(dailyTotals));
+            localStorage.setItem('nutritionHistory', JSON.stringify(nutritionHistory));
+        }
+
+        function removeItem(index) {
+            const [removedItem] = currentMeal.splice(index, 1);
+            dailyTotals.calories -= removedItem.calories;
+            dailyTotals.protein -= removedItem.protein;
+            dailyTotals.carbs -= removedItem.carbs;
+            dailyTotals.fat -= removedItem.fat;
+            dailyTotals.iron -= removedItem.iron;
+            dailyTotals.vitamins -= removedItem.vitamins;
+            saveState();
+            renderMealSummary();
+            renderDailyTotals();
+        }
+
+        function endDayAndSave() {
+            // Check if there are any meals to save
+            if (currentMeal.length > 0 || dailyTotals.water > 0 || dailyTotals.caloriesBurned > 0) {
+                const today = new Date().toLocaleDateString('de-DE');
+                const dayRecord = {
+                    date: today,
+                    totals: { ...dailyTotals }
+                };
+                nutritionHistory.unshift(dayRecord); // Add to the beginning of the array
+                
+                // Clear the current day's data
+                currentMeal = [];
+                dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, water: 0, caloriesBurned: 0, steps: 0, iron: 0, vitamins: 0 };
+                
+                saveState();
+                renderHistory();
+                recommendationSection.classList.add('hidden');
+            }
+            renderMealSummary();
+            renderDailyTotals();
+        }
+
+        // Add water intake
+        addWaterButton.addEventListener('click', () => {
+            const waterAmount = parseInt(waterInput.value, 10);
+            if (!isNaN(waterAmount) && waterAmount > 0) {
+                dailyTotals.water += waterAmount;
+                saveState();
+                renderDailyTotals();
+                waterInput.value = ''; // Clear the input field
+            }
+        });
+        
+        async function getNutritionInfoFromImage(imageFile) {
+            foodLoadingDiv.classList.remove('hidden');
+            foodResultsDiv.classList.add('hidden');
+            foodErrorDiv.classList.add('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64Data = reader.result.split(',')[1];
+                
+                const systemPrompt = "You are a nutrition expert. Analyze the provided image of food and provide a JSON object with a 'name', 'calories', 'protein', 'carbs', 'fat', 'iron', and 'vitamins' property. 'iron' should be in mg and 'vitamins' as a percentage of daily value (100% being a full daily value). The values should be numbers, not strings. The name should be a concise description of the food in German. Provide a realistic estimate based on standard food portions. If you cannot identify the food, return a JSON object with name: 'Unbekannt' and
